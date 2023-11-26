@@ -10,6 +10,9 @@ build/
 .project
 .cproject
 
+# imported packages
+*/vision_opencv
+
 # qcreator stuff
 CMakeLists.txt.user
 
