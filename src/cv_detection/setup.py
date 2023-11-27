@@ -20,7 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'hello_cv = cv_detection.hello_cv:main'
+            'hello_cv = cv_detection.hello_cv:main',
+            'cv_node = cv_detection.cv_node:main',
         ],
     },
 )
