@@ -12,6 +12,8 @@ build/
 
 # imported packages
 */vision_opencv
+*/gscam2
+*/ros2_shared
 
 # qcreator stuff
 CMakeLists.txt.user

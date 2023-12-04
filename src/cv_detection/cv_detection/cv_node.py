@@ -18,7 +18,7 @@ class CvNode(Node):
         self.bridge = bridge
 
     def cvCallback(self, msg):
-        self.cvImg = self.bridge.imgmsg_to_cv2(msg) #cvImg is an ndarray usable by openCV
+        self.cvImg = self.bridge.imgmsg_to_cv2(msg, "bgr8") #cvImg is an ndarray usable by openCV
         
         #TODO: CV code goes here
 
