@@ -9,6 +9,8 @@
 
   <depend>rclpy</depend>
   <depend>vision_opencv</depend>
+  <depend>detection_interfaces</depend>
+  <depend>geometry_msgs</depend>
 
   <exec_depend>sensor_msgs</exec_depend>
 

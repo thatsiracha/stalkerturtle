@@ -1,6 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
+from detection_interfaces.msg import Detection
 
 import cv_bridge as cvb
 import cv2 as cv
@@ -13,6 +14,11 @@ class CvNode(Node):
             Image,
             "/raspi/[TODO]", # TODO: Specify camera topic later
             self.cvCallback,
+            10
+        )
+        self.create_publisher(
+            Detection,
+            "/cv_detection",
             10
         )
         self.bridge = bridge
