@@ -9,7 +9,7 @@ import cv2 as cv
 class CvNode(Node):
 
     def __init__(self, bridge:cvb.CvBridge):
-        super.init("cv_node")
+        super().__init__("cv_node")
         self.create_subscription(
             Image,
             "/image_raw", # TODO: Specify camera topic later
@@ -29,15 +29,17 @@ class CvNode(Node):
         self.frame = self.bridge.imgmsg_to_cv2(msg, "rgb8") #cvImg is an ndarray usable by openCV
         
         #TODO: CV code goes here
-        
+        #model = YOLO("yolo-Weights/yolov8n.pt")
 
 
-def main(args):
+def main(args = None):
     rclpy.init(args=args)
     bridge = cvb.CvBridge()
     cvNode = CvNode(bridge)
-    rclpy.spin(cvNode)
-
+    try:
+        rclpy.spin(cvNode)
+    except KeyboardInterrupt:
+        cvNode.get_logger().info("KeyboardInterrupt")
     cvNode.destroy_node()
 
     rclpy.shutdown()
