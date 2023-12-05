@@ -62,6 +62,7 @@ while True:
                         if (offset > 0):
                             direction = 1
                         frame_filled = (y2-y1)/(480)
+                        other_person = 1
                     else:
                         print("More than one person detected in same frame")
 
