@@ -22,6 +22,8 @@ setup(
         'console_scripts': [
             'hello_cv = cv_detection.hello_cv:main',
             'cv_node = cv_detection.cv_node:main',
+            'turtle_control = cv_detection.turtle_control:main',
+            'dummy_detection = cv_detection.dummy_detection_pub:main',
         ],
     },
 )
