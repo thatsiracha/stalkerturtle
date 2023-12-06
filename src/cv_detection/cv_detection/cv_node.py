@@ -1,6 +1,6 @@
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, CompressedImage
 from detection_interfaces.msg import Detection
 import math
 
@@ -14,8 +14,10 @@ class CvNode(Node):
     def __init__(self, bridge:cvb.CvBridge):
         super().__init__("cv_node")
         self.create_subscription(
-            Image,
-            "/image_raw", # TODO: Specify camera topic later
+            CompressedImage,
+            # Image,
+            # "/image_raw", # TODO: Specify camera topic later
+            "/image_raw/compressed",
             self.cvCallback,
             10
         )
@@ -35,7 +37,8 @@ class CvNode(Node):
         self.detectMsg.framefilled = params[3]
 
     def cvCallback(self, msg):
-        self.frame = self.bridge.imgmsg_to_cv2(msg, "rgb8") #cvImg is an ndarray usable by openCV
+        #self.frame = self.bridge.imgmsg_to_cv2(msg, "bgr8") #cvImg is an ndarray usable by openCV
+        self.frame = self.bridge.compressed_imgmsg_to_cv2(msg, "bgr8")
         
         #TODO: CV code goes here
         model = YOLO("yolo-Weights/yolov8n.pt")
