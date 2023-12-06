@@ -86,7 +86,9 @@ class CvNode(Node):
                             offset = (640/2 - (x1 + x2)/2)/(640)
                             if (offset > 0):
                                 direction = True
-                            frame_filled = (y2-y1)/(480)
+
+                            
+                            frame_filled = abs((y2-y1)/(480))
                             other_person = 1
                         else:
                             print("More than one person detected in same frame")
