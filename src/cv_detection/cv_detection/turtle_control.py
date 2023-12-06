@@ -3,11 +3,45 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from detection_interfaces.msg import Detection
 
+class ControllerGains:
+    # Discrete-Time PI control
+    def __init__(self, K = 1.0, Ti = 1.0, T = 0.0):
+        self.kp = K*(1-T/(2*Ti))
+        self.ki = K*T/Ti
+        self.storedErr = 0
+        self.storedOut = 0
+        
+    
+    def getKp(self):
+        return self.kp
+    def getKi(self):
+        return self.ki
+    
+    
+    def controlLoop(self, fbval, tgtval):
+        err = - fbval + tgtval
+        term1 = (self.kp+self.ki)*err
+        term2 = self.kp*self.storedErr
+        term3 = self.storedOut
+        out = term1-term2+term3
+        if(abs(out) > 1):
+            if (out > 0):
+                out = 1
+            else:
+                out = -1
+
+        self.storedErr = err
+        self.storedOut = out
+        return out
+
+
+        
+
 class ControlNode(Node):
 
-    def __init__(self):
+    def __init__(self, controller_implemented=False, k = 1.0, ti = 5.0):
         super().__init__("turtle_control")
-        timerT = 0.5;
+        timerT = 0.1;
         self.create_subscription(
             Detection,
             "/cv_detection",
@@ -21,7 +55,11 @@ class ControlNode(Node):
         self.lock = neutral_fwd_limit
         self.det = 0
         self.vel_cmd = Twist()
-        self.rot_threshold = 0.1
+        self.ctlimp = controller_implemented
+        if(not controller_implemented):
+            self.rot_threshold = 0.1
+        else: 
+            self.controller = ControllerGains(k,ti,timerT)
 
     def resetTwist(self):
         self.vel_cmd.angular.z = 0.0
@@ -41,17 +79,33 @@ class ControlNode(Node):
 
         angVelMax = 1.2
         linVelMax = 0.2
+        angTgt = 0.0
+        linTgt = 0.5
 
         if not self.det:
             return
+            
+            
+        
         if abs(offset) > self.rot_threshold: 
-            if rotation:
-                self.vel_cmd.angular.z = angVelMax*offset
+            if self.ctlimp:
+                angOut = self.controller.controlLoop(offset, angTgt)
+                if rotation:
+                    self.vel_cmd.angular.z = angVelMax*angOut
+                else:
+                    self.vel_cmd.angular.z = -1*angVelMax*angOut
             else:
-                self.vel_cmd.angular.z = -1*angVelMax*offset
+                if rotation:
+                    self.vel_cmd.angular.z = angVelMax*offset
+                else:
+                    self.vel_cmd.angular.z = -1*angVelMax*offset
         else:
-            self.vel_cmd.linear.x = linVelMax - linVelMax*dist
-            self.fwd = max(self.fwd - 1, 0)
+            if self.ctlimp:
+                linOut = self.controller.controlLoop(dist, linTgt)
+                self.vel_cmd.linear.x = linOut*linVelMax
+            else:
+                self.vel_cmd.linear.x = linVelMax - linVelMax*dist
+                self.fwd = max(self.fwd - 1, 0)
         
 
         
