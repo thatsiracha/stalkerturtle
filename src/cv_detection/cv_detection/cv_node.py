@@ -53,9 +53,9 @@ class CvNode(Node):
         results = model(self.frame, stream=True)
         no_of_person = 0
         detected = False
-        direction = 0
-        offset = 0
-        frame_filled = 0
+        direction = False
+        offset = 0.0
+        frame_filled = 0.0
         other_person = 0
         # coordinates
         for r in results:
@@ -85,7 +85,7 @@ class CvNode(Node):
                         if(other_person == 0):
                             offset = (640/2 - (x1 + x2)/2)/(640)
                             if (offset > 0):
-                                direction = 1
+                                direction = True
                             frame_filled = (y2-y1)/(480)
                             other_person = 1
                         else:
@@ -104,7 +104,7 @@ class CvNode(Node):
         if (no_of_person == 1):
             detected = True
         
-        self.setMsg(detected, direction, offset, frame_filled)
+        self.setMsg([detected, direction, offset, frame_filled])
 
         self.detectionPub.publish(self.detectMsg)
 
