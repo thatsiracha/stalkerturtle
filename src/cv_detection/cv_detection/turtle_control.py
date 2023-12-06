@@ -2,6 +2,7 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from detection_interfaces.msg import Detection
+import random
 
 class ControllerGains:
     # Discrete-Time PI control
@@ -41,7 +42,7 @@ class ControlNode(Node):
 
     def __init__(self, controller_implemented=False, k = 1.0, ti = 5.0):
         super().__init__("turtle_control")
-        timerT = 0.1;
+        timerT = 2/30;
         self.create_subscription(
             Detection,
             "/cv_detection",
@@ -56,10 +57,13 @@ class ControlNode(Node):
         self.det = 0
         self.vel_cmd = Twist()
         self.ctlimp = controller_implemented
-        if(not controller_implemented):
-            self.rot_threshold = 0.1
-        else: 
-            self.controller = ControllerGains(k,ti,timerT)
+        self.count = 1
+        self.side = True
+        self.rot_threshold = 0.1
+        
+        if(controller_implemented):
+            
+            self.controller = ControllerGains(k,ti,1/30)
 
     def resetTwist(self):
         self.vel_cmd.angular.z = 0.0
@@ -78,43 +82,52 @@ class ControlNode(Node):
         rotation = msg.direction
 
         angVelMax = 1.2
-        linVelMax = 0.2
-        angTgt = 0.0
-        linTgt = 0.5
+        linVelMax = 0.25
+        angTgt = 0.1
+        linTgt = 0.9
 
         if not self.det:
             return
-            
-            
-        
-        if abs(offset) > self.rot_threshold: 
-            if self.ctlimp:
+        if self.ctlimp:
+            if abs(offset) > angTgt:
                 angOut = self.controller.controlLoop(offset, angTgt)
                 if rotation:
                     self.vel_cmd.angular.z = angVelMax*angOut
                 else:
                     self.vel_cmd.angular.z = -1*angVelMax*angOut
             else:
+                linOut = self.controller.controlLoop(dist, linTgt)
+                self.vel_cmd.linear.x = linOut*linVelMax
+            
+        else:
+            if abs(offset) > self.rot_threshold: 
                 if rotation:
                     self.vel_cmd.angular.z = angVelMax*offset
                 else:
                     self.vel_cmd.angular.z = -1*angVelMax*offset
-        else:
-            if self.ctlimp:
-                linOut = self.controller.controlLoop(dist, linTgt)
-                self.vel_cmd.linear.x = linOut*linVelMax
             else:
-                self.vel_cmd.linear.x = linVelMax - linVelMax*dist
-                self.fwd = max(self.fwd - 1, 0)
+                    self.vel_cmd.linear.x = linVelMax - linVelMax*dist
+                    self.fwd = max(self.fwd - 1, 0)
         
 
         
     def neutralCall(self):
         if not self.det:
             self.resetTwist()
+            
             if not self.fwd > self.lock:
                 self.fwd += 1
-                self.vel_cmd.linear.x = 0.07
+                self.vel_cmd.linear.x = 0.15
+                self.count += 1
+                if self.count == 4 & self.side:
+                    self.vel_cmd.angular.z = 1
+                    self.count = 1
+                    self.side = False
+                elif self.count == 4 & self.side == False:
+                    self.vel_cmd.angular.z = -1
+                    self.count = 1
+                    self.side = True
+                   
         else:
             self.det = False
         self.velPub.publish(self.vel_cmd)
@@ -122,7 +135,7 @@ class ControlNode(Node):
 
 def main(args = None):
     rclpy.init(args=args)
-    ctlNode = ControlNode()
+    ctlNode = ControlNode(True, 10.0, 0.11)
     rclpy.spin(ctlNode)
 
     ctlNode.destroy_node()
