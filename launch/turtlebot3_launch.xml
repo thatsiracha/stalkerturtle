@@ -2,24 +2,14 @@
 <launch>
 
     <!-- Launch the TurtleBot 3 robot driver -->
-    <node
-        package="turtlebot3_bringup"
-        executable="turtlebot3_core"
-        name="turtlebot3_core"
-        output="screen"
-        emulate_tty="true">
+    <node pkg="turtlebot3_bringup" exec="turtlebot3_core" name="turtlebot3_core">
         <param name="use_sim_time" value="false"/>
         <param name="odom_frame_id" value="odom"/>
         <param name="base_frame_id" value="base_footprint"/>
     </node>
 
     <!-- Launch the robot state publisher for URDF visualization -->
-    <node
-        package="robot_state_publisher"
-        executable="robot_state_publisher"
-        name="robot_state_publisher"
-        output="screen"
-        emulate_tty="true">
+    <node pkg="robot_state_publisher" exec="robot_state_publisher" name="robot_state_publisher">
         <param name="use_sim_time" value="false"/>
         <param name="robot_description" command="cat">
             $(find turtlebot3_bringup)/turtlebot3_urdf/urdf/turtlebot3_burger.urdf
@@ -27,12 +17,7 @@
     </node>
 
     <!-- Launch the v4l2_camera node for Raspberry Pi Camera -->
-    <node
-        package="v4l2_camera"
-        executable="v4l2_camera_node"
-        name="v4l2_camera"
-        output="screen"
-        emulate_tty="true">
+    <node pkg="v4l2_camera" exec="v4l2_camera_node" name="v4l2_camera" >
         <!-- Add parameters for camera settings if needed -->
     </node>
 
