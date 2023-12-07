@@ -156,7 +156,7 @@ class ControlNode(Node):
 
 def main(args = None):
     rclpy.init(args=args)
-    ctlNode = ControlNode(True, 1.5, 20)
+    ctlNode = ControlNode(True, 1.3, 30)
     # ctlNode = ControlNode()
     rclpy.spin(ctlNode)
 
