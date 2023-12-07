@@ -88,7 +88,7 @@ class CvNode(Node):
                     if (classNames[cls] == "person"):
                         no_of_person =  no_of_person + 1
                         if(other_person == 0):
-                            offset = (640/2 - (x1 + x2))/2/(640)
+                            offset = (640/2 - (x1 + x2)/2)/(640)
                             if (offset > 0):
                                 direction = True
                             else:
