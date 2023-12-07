@@ -26,9 +26,11 @@ class CvNode(Node):
             "/cv_detection",
             10
         )
+        self.create_timer(0.1, self.display)
         self.bridge = bridge
         self.frame = None
         self.detectMsg = Detection()
+        self.boxDrawn = False
 
     def setMsg(self, params):
         self.detectMsg.detected = params[0]
@@ -39,7 +41,7 @@ class CvNode(Node):
     def cvCallback(self, msg):
         #self.frame = self.bridge.imgmsg_to_cv2(msg, "bgr8") #cvImg is an ndarray usable by openCV
         self.frame = self.bridge.compressed_imgmsg_to_cv2(msg, "bgr8")
-        
+        self.boxDrawn = True
         #TODO: CV code goes here
         model = YOLO("yolo-Weights/yolov8n.pt")
         classNames = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat",
@@ -108,6 +110,7 @@ class CvNode(Node):
                     thickness = 2
 
                     cv.putText(self.frame, classNames[cls], org, font, fontScale, color, thickness)
+                    self.boxDrawn = True
         if (no_of_person == 1):
             detected = True
         
@@ -115,8 +118,12 @@ class CvNode(Node):
 
         self.detectionPub.publish(self.detectMsg)
 
-        cv.imshow('Webcam', self.frame)
         
+    def display(self):
+        # if self.boxDrawn:
+        if self.boxDrawn:
+            cv.imshow('Webcam', self.frame)
+            cv.waitKey(1)
 
 
 def main(args = None):

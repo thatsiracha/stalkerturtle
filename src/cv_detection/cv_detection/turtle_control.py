@@ -2,7 +2,6 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from detection_interfaces.msg import Detection
-import random
 
 class ControllerGains:
     # Discrete-Time PI control
@@ -42,7 +41,7 @@ class ControlNode(Node):
 
     def __init__(self, controller_implemented=False, k = 1.0, ti = 5.0):
         super().__init__("turtle_control")
-        timerT = 2/30;
+        timerT = 0.1;
         self.create_subscription(
             Detection,
             "/cv_detection",
@@ -57,9 +56,9 @@ class ControlNode(Node):
         self.det = 0
         self.vel_cmd = Twist()
         self.ctlimp = controller_implemented
-        self.count = 1
+        self.count = 44
         self.side = True
-        self.rot_threshold = 0.1
+        self.rot_threshold = 0.07
         
         
         if(controller_implemented):
@@ -76,39 +75,54 @@ class ControlNode(Node):
         self.velPub.publish(self.vel_cmd);
         return super().destroy_node()
     
+    def verbose(self, msg):
+        self.get_logger().info(msg)
+    
     def ctlCallback(self, msg):
         offset = msg.offset
         dist = msg.framefilled
         self.det = msg.detected
         rotation = msg.direction
 
-        angVelMax = 1.2
-        linVelMax = 0.25
-        angTgt = 0.1
+        angVelMax = 1.6
+        linVelMax = 0.20
+        angTgt = 0.05
         linTgt = 0.9
 
         if not self.det:
             return
+        self.resetTwist()
         if self.ctlimp:
+            angOut = self.controller.controlLoop(offset, angTgt)
+            linOut = self.controller.controlLoop(dist, linTgt)
             if abs(offset) > angTgt:
-                angOut = self.controller.controlLoop(offset, angTgt)
                 if rotation:
-                    self.vel_cmd.angular.z = angVelMax*angOut
+                    self.vel_cmd.angular.z = -1*angVelMax*abs(angOut)
+                    self.verbose("CONTROL TURN RIGHT: %f rad/s" % self.vel_cmd.angular.z)
                 else:
-                    self.vel_cmd.angular.z = -1*angVelMax*angOut
+                    self.vel_cmd.angular.z = angVelMax*abs(angOut)
+                    self.verbose("CONTROL TURN LEFT: %f rad/s" % self.vel_cmd.angular.z)
             else:
-                linOut = self.controller.controlLoop(dist, linTgt)
                 self.vel_cmd.linear.x = linOut*linVelMax
+                self.fwd = max(self.fwd - 1, 0)
+                if abs(self.vel_cmd.linear.x) < 0.01:
+                        self.vel_cmd.linear.x = 0.0
+                self.verbose("CONTROL FWD: %f m/s" % self.vel_cmd.linear.x)
             
         else:
             if abs(offset) > self.rot_threshold: 
                 if rotation:
-                    self.vel_cmd.angular.z = angVelMax*offset
+                    self.vel_cmd.angular.z = -1*1.1*angVelMax*offset
+                    self.verbose("CONTROL TURN RIGHT: %f rad/s" % self.vel_cmd.angular.z)
                 else:
-                    self.vel_cmd.angular.z = -1*angVelMax*offset
+                    self.vel_cmd.angular.z = 1.1*angVelMax*offset
+                    self.verbose("CONTROL TURN LEFT: %f rad/s" % self.vel_cmd.angular.z)
             else:
-                    self.vel_cmd.linear.x = linVelMax - linVelMax*dist
+                    self.vel_cmd.linear.x = linVelMax - linVelMax*(0.8*dist/linTgt)
+                    if abs(self.vel_cmd.linear.x) < 0.01:
+                        self.vel_cmd.linear.x = 0.0
                     self.fwd = max(self.fwd - 1, 0)
+                    self.verbose("CONTROL FWD: %f m/s" % self.vel_cmd.linear.x)
         
 
         
@@ -118,25 +132,32 @@ class ControlNode(Node):
             
             if not self.fwd > self.lock:
                 self.fwd += 1
-                self.vel_cmd.linear.x = 0.15
+                self.vel_cmd.linear.x = 0.07
+                self.verbose("N: RUN FORWARD")
+                
+            else:
+                if self.count == 0:
+                    self.vel_cmd.angular.z = 0.6
                 self.count += 1
-                if self.count == 4 & self.side:
-                    self.vel_cmd.angular.z = 0.3
-                    self.count = 1
-                    self.side = False
-                elif self.count == 4 & self.side == False:
-                    self.vel_cmd.angular.z = -0.3
-                    self.count = 1
-                    self.side = True
+                if self.count >= 45:
+                    if self.side:
+                        self.vel_cmd.angular.z = 0.6
+                        self.side = not self.side
+                        self.verbose("N: TURN LEFT")
+                    else:
+                        self.vel_cmd.angular.z = -1.2
+                        self.side = not self.side
+                        self.verbose("N: TURN RIGHT")
+                        self.count = 0
+                
                    
-        else:
-            self.det = False
         self.velPub.publish(self.vel_cmd)
         
 
 def main(args = None):
     rclpy.init(args=args)
-    ctlNode = ControlNode(True, 10.0, 0.11)
+    ctlNode = ControlNode(True, 1.5, 20)
+    # ctlNode = ControlNode()
     rclpy.spin(ctlNode)
 
     ctlNode.destroy_node()
