@@ -61,6 +61,7 @@ class ControlNode(Node):
         self.side = True
         self.rot_threshold = 0.1
         
+        
         if(controller_implemented):
             
             self.controller = ControllerGains(k,ti,1/30)
@@ -120,11 +121,11 @@ class ControlNode(Node):
                 self.vel_cmd.linear.x = 0.15
                 self.count += 1
                 if self.count == 4 & self.side:
-                    self.vel_cmd.angular.z = 1
+                    self.vel_cmd.angular.z = 0.3
                     self.count = 1
                     self.side = False
                 elif self.count == 4 & self.side == False:
-                    self.vel_cmd.angular.z = -1
+                    self.vel_cmd.angular.z = -0.3
                     self.count = 1
                     self.side = True
                    
