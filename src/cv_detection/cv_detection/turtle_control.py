@@ -39,7 +39,7 @@ class ControllerGains:
 
 class ControlNode(Node):
 
-    def __init__(self, controller_implemented=False, k = 1.0, ti = 5.0):
+    def __init__(self, controller_implemented=False, k = 1.0, ti = 5.0, k2 = 1.0, ti2 = 5.0):
         super().__init__("turtle_control")
         timerT = 0.1;
         self.create_subscription(
@@ -64,6 +64,7 @@ class ControlNode(Node):
         if(controller_implemented):
             
             self.controller = ControllerGains(k,ti,1/30)
+            self.linController = ControllerGains(k2, ti2, 1/30)
 
     def resetTwist(self):
         self.vel_cmd.angular.z = 0.0
@@ -85,7 +86,7 @@ class ControlNode(Node):
         rotation = msg.direction
 
         angVelMax = 1.6
-        linVelMax = 0.20
+        linVelMax = 0.4
         angTgt = 0.05
         linTgt = 0.9
 
@@ -94,7 +95,7 @@ class ControlNode(Node):
         self.resetTwist()
         if self.ctlimp:
             angOut = self.controller.controlLoop(offset, angTgt)
-            linOut = self.controller.controlLoop(dist, linTgt)
+            linOut = self.linController.controlLoop(dist, linTgt)
             if abs(offset) > angTgt:
                 if rotation:
                     self.vel_cmd.angular.z = -1*angVelMax*abs(angOut)
@@ -136,11 +137,11 @@ class ControlNode(Node):
                 self.verbose("N: RUN FORWARD")
                 
             else:
-                if self.count == 0:
+                if self.count >= 0 and self.count <= 5:
                     self.vel_cmd.angular.z = 0.6
                 self.count += 1
                 if self.count >= 45:
-                    if self.side:
+                    if self.count >=45 and self.count <= 50:
                         self.vel_cmd.angular.z = 0.6
                         self.side = not self.side
                         self.verbose("N: TURN LEFT")
@@ -148,7 +149,8 @@ class ControlNode(Node):
                         self.vel_cmd.angular.z = -1.2
                         self.side = not self.side
                         self.verbose("N: TURN RIGHT")
-                        self.count = 0
+                        if self.count >= 55:
+                            self.count = 0
                 
                    
         self.velPub.publish(self.vel_cmd)
@@ -156,7 +158,7 @@ class ControlNode(Node):
 
 def main(args = None):
     rclpy.init(args=args)
-    ctlNode = ControlNode(True, 1.3, 30)
+    ctlNode = ControlNode(True, 0.87, 26, 1.2, 15)
     # ctlNode = ControlNode()
     rclpy.spin(ctlNode)
 
